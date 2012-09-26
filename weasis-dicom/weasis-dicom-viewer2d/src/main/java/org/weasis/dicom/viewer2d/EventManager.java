@@ -54,7 +54,6 @@ import org.weasis.core.api.media.data.TagW;
 import org.weasis.core.api.service.AuditLog;
 import org.weasis.core.api.service.BundlePreferences;
 import org.weasis.core.ui.docking.DockableTool;
-import org.weasis.core.ui.docking.UIManager;
 import org.weasis.core.ui.editor.SeriesViewerEvent;
 import org.weasis.core.ui.editor.SeriesViewerEvent.EVENT;
 import org.weasis.core.ui.editor.image.DefaultView2d;
@@ -110,6 +109,7 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
     private final SliderChangeListener rotateAction;
     private final SliderChangeListener zoomAction;
     private final SliderChangeListener lensZoomAction;
+    private final SliderChangeListener mipThicknessAction;
 
     private final ToggleButtonListener flipAction;
     private final ToggleButtonListener inverseLutAction;
@@ -125,6 +125,7 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
     private final ComboItemListener filterAction;
     private final ComboItemListener sortStackAction;
     private final ComboItemListener viewingProtocolAction;
+    private final ComboItemListener mipAction;
     private final ComboItemListener layoutAction;
     private final ComboItemListener synchAction;
     private final ComboItemListener measureAction;
@@ -166,6 +167,8 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         iniAction(inverseStackAction = newInverseStackAction());
         iniAction(showLensAction = newLensAction());
         iniAction(lensZoomAction = newLensZoomAction());
+        iniAction(mipThicknessAction = newMipThicknessAction());
+
         // iniAction(imageOverlayAction = newImageOverlayAction());
         iniAction(drawOnceAction = newDrawOnlyOnceAction());
         iniAction(defaultPresetAction = newDefaulPresetAction());
@@ -175,6 +178,7 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         iniAction(lutAction = newLutAction());
         iniAction(filterAction = newFilterAction());
         iniAction(sortStackAction = newSortStackAction());
+        iniAction(mipAction = newMipAction());
         iniAction(viewingProtocolAction = newViewingProtocolAction());
         iniAction(layoutAction = newLayoutAction(View2dContainer.MODELS));
         iniAction(synchAction = newSynchAction(SYNCH_LIST.toArray(new SynchView[SYNCH_LIST.size()])));
@@ -588,6 +592,32 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         };
     }
 
+    private ComboItemListener newMipAction() {
+        return new ComboItemListener(ActionW.MIP, MipToolBar.Type.values()) {
+
+            @Override
+            public void itemStateChanged(Object object) {
+                firePropertyChange(action.cmd(), null, object);
+            }
+        };
+    }
+
+    protected SliderChangeListener newMipThicknessAction() {
+        return new SliderChangeListener(ActionW.MIP_THICKNESS, 1, 100, 10, false) {
+
+            @Override
+            public void stateChanged(BoundedRangeModel model) {
+                firePropertyChange(action.cmd(), null, model.getValue());
+            }
+
+            @Override
+            public String getValueToDisplay() {
+                return getValue() + " %";
+            }
+
+        };
+    }
+
     @Override
     public ActionW getActionFromCommand(String command) {
         ActionW action = super.getActionFromCommand(command);
@@ -809,6 +839,9 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         }
 
         sortStackAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.SORTSTACK.cmd()));
+        mipAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.MIP.cmd()));
+        mipThicknessAction.setValueWithoutTriggerAction((Integer) view2d.getActionValue(ActionW.MIP_THICKNESS.cmd()));
+
         viewingProtocolAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.VIEWINGPROTOCOL.cmd()));
         inverseStackAction.setSelectedWithoutTriggerAction((Boolean) view2d.getActionValue(ActionW.INVERSESTACK.cmd()));
 

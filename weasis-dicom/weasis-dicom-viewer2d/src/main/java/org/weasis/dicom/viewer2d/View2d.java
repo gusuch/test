@@ -198,6 +198,8 @@ public class View2d extends DefaultView2d<DicomImageElement> {
         actionsInView.put(ActionW.DEFAULT_PRESET.cmd(), true);
         actionsInView.put(ActionW.LUT_SHAPE.cmd(), LutShape.LINEAR);
         actionsInView.put(ActionW.SORTSTACK.cmd(), SortSeriesStack.instanceNumber);
+        actionsInView.put(ActionW.MIP.cmd(), MipToolBar.Type.NONE);
+        actionsInView.put(ActionW.MIP_THICKNESS.cmd(), 1);
         actionsInView.put(ActionW.IMAGE_OVERLAY.cmd(), true);
         actionsInView.put(ActionW.IMAGE_PIX_PADDING.cmd(), true);
         actionsInView.put(ActionW.VIEWINGPROTOCOL.cmd(), Modality.ImageModality);
@@ -235,6 +237,12 @@ public class View2d extends DefaultView2d<DicomImageElement> {
         } else if (command.equals(ActionW.SORTSTACK.cmd())) {
             actionsInView.put(ActionW.SORTSTACK.cmd(), val);
             sortStack(getCurrentSortComparator());
+        } else if (command.equals(ActionW.MIP.cmd())) {
+            actionsInView.put(ActionW.MIP.cmd(), val);
+            MipToolBar.applyMipParameters(this, imageLayer, actionsInView);
+        } else if (command.equals(ActionW.MIP_THICKNESS.cmd())) {
+            actionsInView.put(ActionW.MIP_THICKNESS.cmd(), val);
+            MipToolBar.applyMipParameters(this, imageLayer, actionsInView);
         } else if (command.equals(ActionW.VIEWINGPROTOCOL.cmd())) {
             actionsInView.put(ActionW.VIEWINGPROTOCOL.cmd(), val);
             repaint();
@@ -327,6 +335,11 @@ public class View2d extends DefaultView2d<DicomImageElement> {
                                 return null;
                             }
                             return actionsInView.get(action);
+                        }
+
+                        @Override
+                        public MediaSeries getSeries() {
+                            return View2d.this.getSeries();
                         }
                     });
                     manager.addImageOperationAction(new CropOperation());

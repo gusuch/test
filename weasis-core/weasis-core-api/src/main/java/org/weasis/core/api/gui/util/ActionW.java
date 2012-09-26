@@ -48,7 +48,8 @@ public class ActionW {
     public static final ActionW FLIP = new ActionW(Messages.getString("ActionW.flip"), "flip", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW PRESET = new ActionW(Messages.getString("ActionW.preset"), "preset", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW DEFAULT_PRESET = new ActionW("", "default_preset", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
-    public static final ActionW LUT_SHAPE = new ActionW(Messages.getString("ActionW.lut_shape"), "lut_shape", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
+    public static final ActionW LUT_SHAPE = new ActionW(
+        Messages.getString("ActionW.lut_shape"), "lut_shape", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW LUT = new ActionW(Messages.getString("ActionW.lut"), "lut", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW INVERSELUT = new ActionW("", "inverseLut", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW RESET = new ActionW(Messages.getString("ActionW.Reset"), "reset", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
@@ -64,6 +65,8 @@ public class ActionW {
     public static final ActionW CONTEXTMENU = new ActionW(
         Messages.getString("ActionW.context_menu"), "contextMenu", KeyEvent.VK_Q, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW VIEWINGPROTOCOL = new ActionW("", "viewingProtocol", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
+    public static final ActionW MIP = new ActionW("MIP", "mip", 0, 0, null);
+    public static final ActionW MIP_THICKNESS = new ActionW("Thickness", "mip_thickness", 0, 0, null);
     public static final ActionW LAYOUT = new ActionW(Messages.getString("ActionW.layout"), "layout", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW MODE = new ActionW(Messages.getString("ActionW.switch_mode"), "mode", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW IMAGE_OVERLAY = new ActionW(

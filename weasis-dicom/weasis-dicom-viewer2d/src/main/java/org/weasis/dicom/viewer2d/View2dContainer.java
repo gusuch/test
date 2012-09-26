@@ -125,19 +125,21 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
             TOOLBARS.add(1, bar.getMeasureToolBar());
             CineToolBar cineBar = new CineToolBar<DicomImageElement>();
             TOOLBARS.add(2, cineBar);
+            MipToolBar mipBar = new MipToolBar<DicomImageElement>();
+            TOOLBARS.add(3, mipBar);
 
             Preferences prefs = Activator.PREFERENCES.getDefaultPreferences();
             if (prefs != null) {
                 Preferences prefNode = prefs.node("toolbars"); //$NON-NLS-1$
 
                 boolean cineLoopIsEnabled = prefNode.getBoolean(CineToolBar.class.getName(), false);
-
-                // MEDECOM UI CONFIG
                 if (BundleTools.SYSTEM_PREFERENCES.getBooleanProperty("weasis.cinetoolbar.alwaysvisible", true)) {
                     cineLoopIsEnabled = true;
                 }
                 cineBar.setEnabled(cineLoopIsEnabled);
 
+                boolean mipIsEnabled = prefNode.getBoolean(MipToolBar.class.getName(), false);
+                mipBar.setEnabled(mipIsEnabled);
             }
 
             PluginTool tool = null;
