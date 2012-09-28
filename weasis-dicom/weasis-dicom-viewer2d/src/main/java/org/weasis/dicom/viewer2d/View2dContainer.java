@@ -138,7 +138,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
                 }
                 cineBar.setEnabled(cineLoopIsEnabled);
 
-                boolean mipIsEnabled = prefNode.getBoolean(MipToolBar.class.getName(), false);
+                boolean mipIsEnabled = prefNode.getBoolean(MipToolBar.class.getName(), true);
                 mipBar.setEnabled(mipIsEnabled);
             }
 
