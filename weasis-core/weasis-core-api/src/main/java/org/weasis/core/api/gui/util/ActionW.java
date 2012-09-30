@@ -65,8 +65,6 @@ public class ActionW {
     public static final ActionW CONTEXTMENU = new ActionW(
         Messages.getString("ActionW.context_menu"), "contextMenu", KeyEvent.VK_Q, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW VIEWINGPROTOCOL = new ActionW("", "viewingProtocol", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
-    public static final ActionW MIP = new ActionW("MIP", "mip", 0, 0, null);
-    public static final ActionW MIP_THICKNESS = new ActionW("Thickness", "mip_thickness", 0, 0, null);
     public static final ActionW LAYOUT = new ActionW(Messages.getString("ActionW.layout"), "layout", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW MODE = new ActionW(Messages.getString("ActionW.switch_mode"), "mode", 0, 0, null); //$NON-NLS-1$ //$NON-NLS-2$
     public static final ActionW IMAGE_OVERLAY = new ActionW(

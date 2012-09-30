@@ -14,7 +14,6 @@ import org.weasis.core.api.gui.ImageOperation;
 import org.weasis.core.api.gui.util.ActionW;
 import org.weasis.core.api.gui.util.Filter;
 import org.weasis.core.api.image.AbstractOperation;
-import org.weasis.core.api.media.data.ImageElement;
 import org.weasis.core.api.media.data.MediaSeries;
 import org.weasis.core.api.media.data.SeriesComparator;
 import org.weasis.dicom.codec.DicomImageElement;
@@ -23,6 +22,24 @@ public class MipOperation extends AbstractOperation {
     private static final Logger LOGGER = LoggerFactory.getLogger(MipOperation.class);
 
     public static final String name = "mip_op";
+    public static final ActionW MIP = new ActionW("MIP", "mip", 0, 0, null);
+    public static final ActionW MIP_MIN_SLICE = new ActionW("Min Slice: ", "mip_min", 0, 0, null);
+    public static final ActionW MIP_MAX_SLICE = new ActionW("Max Slice: ", "mip_max", 0, 0, null);
+
+    public enum Type {
+        MIN("min-MIP"), MAX("MIP");
+
+        private final String value;
+
+        Type(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    };
 
     @Override
     public String getOperationName() {
@@ -31,12 +48,13 @@ public class MipOperation extends AbstractOperation {
 
     @Override
     public RenderedImage getRenderedImage(RenderedImage source, ImageOperation imageOperation) {
-        MipToolBar.Type mipType = (MipToolBar.Type) imageOperation.getActionValue(ActionW.MIP.cmd());
-        Integer thickness = (Integer) imageOperation.getActionValue(ActionW.MIP_THICKNESS.cmd());
-        if (mipType == null || thickness == null) {
+        Type mipType = (Type) imageOperation.getActionValue(MipOperation.MIP.cmd());
+        Integer min = (Integer) imageOperation.getActionValue(MipOperation.MIP_MIN_SLICE.cmd());
+        Integer max = (Integer) imageOperation.getActionValue(MipOperation.MIP_MAX_SLICE.cmd());
+        if (mipType == null || min == null || max == null) {
             result = source;
             LOGGER.warn("Cannot apply \"{}\" because a parameter is null", name); //$NON-NLS-1$
-        } else if (MipToolBar.Type.NONE.equals(mipType) || thickness == 0) {
+        } else if (max - min < 3) {
             result = source;
         } else {
             PlanarImage curImage = null;
@@ -49,50 +67,37 @@ public class MipOperation extends AbstractOperation {
                 Comparator sortFilter = (reverse != null && reverse) ? sort.getReversOrderComparator() : sort;
                 Filter filter = (Filter) imageOperation.getActionValue(ActionW.FILTERED_SERIES.cmd());
                 Iterable<DicomImageElement> medias = series.getMedias(filter, sortFilter);
-                int size = (int) Math.floor(series.size(filter) * (thickness / 100.0D) + 0.5D);
-                ImageElement imageElement = imageOperation.getImage();
-                if (imageElement != null && size > 2) {
 
-                    synchronized (medias) {
-                        int curIndex = 0;
-                        Iterator<DicomImageElement> iter = medias.iterator();
+                synchronized (medias) {
+                    Iterator<DicomImageElement> iter = medias.iterator();
+                    int startIndex = min - 1;
+                    int k = 0;
+                    if (startIndex > 0) {
                         while (iter.hasNext()) {
-                            if (imageElement == iter.next()) {
+                            DicomImageElement dcm = iter.next();
+                            if (k >= startIndex) {
+                                curImage = dcm.getImage();
                                 break;
                             }
-                            curIndex++;
+                            k++;
                         }
-
-                        iter = medias.iterator();
-                        int startIndex = curIndex - size;
-                        int k = 0;
-                        if (startIndex > 0) {
-                            while (iter.hasNext()) {
-                                DicomImageElement dcm = iter.next();
-                                if (k == curIndex) {
-                                    curImage = dcm.getImage();
-                                    break;
-                                }
-                                k++;
-                            }
-                        } else {
-                            if (iter.hasNext()) {
-                                DicomImageElement dcmCur = iter.next();
-                                curImage = dcmCur.getImage();
-                            }
+                    } else {
+                        if (iter.hasNext()) {
+                            DicomImageElement dcmCur = iter.next();
+                            curImage = dcmCur.getImage();
                         }
+                    }
 
-                        int stopIndex = curIndex + size;
-                        if (curImage != null) {
-                            while (iter.hasNext()) {
-                                DicomImageElement dcm = iter.next();
-                                PlanarImage img = dcm.getImage();
-                                curImage = arithmeticOperation(operator, curImage, img);
-                                if (k >= stopIndex) {
-                                    break;
-                                }
-                                k++;
+                    int stopIndex = max - 1;
+                    if (curImage != null) {
+                        while (iter.hasNext()) {
+                            DicomImageElement dcm = iter.next();
+                            PlanarImage img = dcm.getImage();
+                            curImage = arithmeticOperation(operator, curImage, img);
+                            if (k >= stopIndex) {
+                                break;
                             }
+                            k++;
                         }
                     }
                 }

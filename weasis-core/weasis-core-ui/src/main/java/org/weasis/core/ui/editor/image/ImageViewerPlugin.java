@@ -339,6 +339,56 @@ public abstract class ImageViewerPlugin<E extends ImageElement> extends ViewerPl
         }
     }
 
+    public void replaceView(DefaultView2d<E> oldView2d, DefaultView2d<E> newView2d) {
+        if (oldView2d != null && newView2d != null) {
+            grid.removeAll();
+            final LinkedHashMap<LayoutConstraints, JComponent> elements = this.layoutModel.getConstraints();
+            Iterator<Entry<LayoutConstraints, JComponent>> enumVal = elements.entrySet().iterator();
+            while (enumVal.hasNext()) {
+                Entry<LayoutConstraints, JComponent> element = enumVal.next();
+
+                if (element.getValue() == oldView2d) {
+                    if (selectedImagePane == oldView2d) {
+                        selectedImagePane = newView2d;
+                    }
+                    oldView2d.dispose();
+                    int index = view2ds.indexOf(oldView2d);
+                    if (index >= 0) {
+                        view2ds.set(index, newView2d);
+                    }
+                    elements.put(element.getKey(), newView2d);
+                    grid.add(newView2d, element.getKey());
+                    if (newView2d.getSeries() != null) {
+                        newView2d.getSeries().setOpen(true);
+                    }
+                } else {
+                    grid.add(element.getValue(), element.getKey());
+                }
+            }
+            grid.revalidate();
+
+            MouseActions mouseActions = eventManager.getMouseActions();
+            for (int i = 0; i < view2ds.size(); i++) {
+                DefaultView2d<E> v = view2ds.get(i);
+                // Close lens because update does not work
+                v.closeLens();
+                if (SynchView.Mode.Tile.equals(synchView)) {
+                    v.setTileOffset(i);
+                    v.setSeries(selectedImagePane.getSeries(), null);
+                }
+                v.enableMouseAndKeyListener(mouseActions);
+            }
+            Graphic graphic = null;
+            ActionState action = eventManager.getAction(ActionW.DRAW_MEASURE);
+            if (action instanceof ComboItemListener) {
+                graphic = (Graphic) ((ComboItemListener) action).getSelectedItem();
+            }
+            setDrawActions(graphic);
+            selectedImagePane.setSelected(true);
+            eventManager.updateComponentsListener(selectedImagePane);
+        }
+    }
+
     public void setSelectedImagePaneFromFocus(DefaultView2d<E> defaultView2d) {
         setSelectedImagePane(defaultView2d);
     }

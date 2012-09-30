@@ -109,7 +109,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
     private final SliderChangeListener rotateAction;
     private final SliderChangeListener zoomAction;
     private final SliderChangeListener lensZoomAction;
-    private final SliderChangeListener mipThicknessAction;
 
     private final ToggleButtonListener flipAction;
     private final ToggleButtonListener inverseLutAction;
@@ -125,7 +124,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
     private final ComboItemListener filterAction;
     private final ComboItemListener sortStackAction;
     private final ComboItemListener viewingProtocolAction;
-    private final ComboItemListener mipAction;
     private final ComboItemListener layoutAction;
     private final ComboItemListener synchAction;
     private final ComboItemListener measureAction;
@@ -167,7 +165,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         iniAction(inverseStackAction = newInverseStackAction());
         iniAction(showLensAction = newLensAction());
         iniAction(lensZoomAction = newLensZoomAction());
-        iniAction(mipThicknessAction = newMipThicknessAction());
 
         // iniAction(imageOverlayAction = newImageOverlayAction());
         iniAction(drawOnceAction = newDrawOnlyOnceAction());
@@ -178,7 +175,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         iniAction(lutAction = newLutAction());
         iniAction(filterAction = newFilterAction());
         iniAction(sortStackAction = newSortStackAction());
-        iniAction(mipAction = newMipAction());
         iniAction(viewingProtocolAction = newViewingProtocolAction());
         iniAction(layoutAction = newLayoutAction(View2dContainer.MODELS));
         iniAction(synchAction = newSynchAction(SYNCH_LIST.toArray(new SynchView[SYNCH_LIST.size()])));
@@ -592,32 +588,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         };
     }
 
-    private ComboItemListener newMipAction() {
-        return new ComboItemListener(ActionW.MIP, MipToolBar.Type.values()) {
-
-            @Override
-            public void itemStateChanged(Object object) {
-                firePropertyChange(action.cmd(), null, object);
-            }
-        };
-    }
-
-    protected SliderChangeListener newMipThicknessAction() {
-        return new SliderChangeListener(ActionW.MIP_THICKNESS, 1, 100, 10, false) {
-
-            @Override
-            public void stateChanged(BoundedRangeModel model) {
-                firePropertyChange(action.cmd(), null, model.getValue());
-            }
-
-            @Override
-            public String getValueToDisplay() {
-                return getValue() + " %";
-            }
-
-        };
-    }
-
     @Override
     public ActionW getActionFromCommand(String command) {
         ActionW action = super.getActionFromCommand(command);
@@ -839,9 +809,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
         }
 
         sortStackAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.SORTSTACK.cmd()));
-        mipAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.MIP.cmd()));
-        mipThicknessAction.setValueWithoutTriggerAction((Integer) view2d.getActionValue(ActionW.MIP_THICKNESS.cmd()));
-
         viewingProtocolAction.setSelectedItemWithoutTriggerAction(view2d.getActionValue(ActionW.VIEWINGPROTOCOL.cmd()));
         inverseStackAction.setSelectedWithoutTriggerAction((Boolean) view2d.getActionValue(ActionW.INVERSESTACK.cmd()));
 
@@ -877,7 +844,6 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
                 view2d.getLayerModel().addGraphicSelectionListener((GraphicsListener) p);
             }
         }
-
         return true;
     }
 
@@ -927,6 +893,9 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
             MediaSeries<DicomImageElement> series = viewPane.getSeries();
             if (series != null) {
                 addPropertyChangeListeners(viewPane);
+                if (viewPane instanceof MipView) {
+                    propertySupport.removePropertyChangeListener(ActionW.SCROLL_SERIES.cmd(), viewPane);
+                }
                 final ArrayList<DefaultView2d<DicomImageElement>> panes = viewerPlugin.getImagePanels();
                 panes.remove(viewPane);
                 viewPane.setActionsInView(ActionW.SYNCH_CROSSLINE.cmd(), false);
@@ -940,7 +909,8 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
                         }
                         MediaSeries<DicomImageElement> s = pane.getSeries();
                         String fruid = (String) series.getTagValue(TagW.FrameOfReferenceUID);
-                        if (s != null && fruid != null) {
+                        boolean specialView = pane instanceof MipView;
+                        if (s != null && fruid != null && !specialView) {
                             if (fruid.equals(s.getTagValue(TagW.FrameOfReferenceUID))) {
                                 if (!ImageOrientation.hasSameOrientation(series, s)) {
                                     pane.setActionsInView(ActionW.SYNCH_CROSSLINE.cmd(), true);
@@ -966,7 +936,8 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
                                 layer.deleteAllGraphic();
                             }
                             MediaSeries<DicomImageElement> s = pane.getSeries();
-                            if (s != null && fruid != null && val != null) {
+                            boolean specialView = pane instanceof MipView;
+                            if (s != null && fruid != null && val != null && !specialView) {
                                 if (fruid.equals(s.getTagValue(TagW.FrameOfReferenceUID))) {
                                     if (ImageOrientation.hasSameOrientation(series, s)) {
                                         hasLink = true;
@@ -998,7 +969,8 @@ public class EventManager extends ImageViewerEventManager<DicomImageElement> imp
                     } else if (Mode.Tile.equals(synchView.getMode())) {
                         for (int i = 0; i < panes.size(); i++) {
                             DefaultView2d<DicomImageElement> pane = panes.get(i);
-                            pane.setActionsInView(ActionW.SYNCH_LINK.cmd(), true);
+                            boolean specialView = pane instanceof MipView;
+                            pane.setActionsInView(ActionW.SYNCH_LINK.cmd(), !specialView);
                             pane.setActionsInView(ActionW.SYNCH_CROSSLINE.cmd(), false);
                             addPropertyChangeListeners(pane, synchView);
                         }

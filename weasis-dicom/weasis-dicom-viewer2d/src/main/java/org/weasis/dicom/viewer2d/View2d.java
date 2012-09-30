@@ -91,6 +91,7 @@ import org.weasis.core.ui.editor.image.ImageViewerPlugin;
 import org.weasis.core.ui.editor.image.MouseActions;
 import org.weasis.core.ui.editor.image.PannerListener;
 import org.weasis.core.ui.editor.image.SynchView;
+import org.weasis.core.ui.editor.image.ViewButton;
 import org.weasis.core.ui.editor.image.ViewerPlugin;
 import org.weasis.core.ui.editor.image.ViewerToolBar;
 import org.weasis.core.ui.graphic.AbstractDragGraphic;
@@ -129,9 +130,12 @@ import org.weasis.dicom.explorer.MimeSystemAppFactory;
 public class View2d extends DefaultView2d<DicomImageElement> {
     private final Dimension oldSize;
     private final ContextMenuHandler contextMenuHandler = new ContextMenuHandler();
+    protected final List<ViewButton> viewButtons;
 
     public View2d(ImageViewerEventManager<DicomImageElement> eventManager) {
         super(eventManager);
+        this.viewButtons = new ArrayList<ViewButton>();
+
         OperationsManager manager = imageLayer.getOperationsManager();
         manager.addImageOperationAction(new WindowLevelOperation());
         manager.addImageOperationAction(new OverlayOperation());
@@ -975,7 +979,7 @@ public class View2d extends DefaultView2d<DicomImageElement> {
             String action = event.getMouseActions().getLeft();
             ActionW[] actionsButtons = ViewerToolBar.actionsButtons;
             ButtonGroup groupButtons = new ButtonGroup();
-            ImageViewerPlugin<DicomImageElement> view = eventManager.getSelectedView2dContainer();
+            final ImageViewerPlugin<DicomImageElement> view = eventManager.getSelectedView2dContainer();
             if (view != null) {
                 final ViewerToolBar toolBar = view.getViewerToolBar();
                 if (toolBar != null) {
@@ -1091,15 +1095,6 @@ public class View2d extends DefaultView2d<DicomImageElement> {
                 }
             }
 
-            JMenuItem mip = new JMenuItem("Open MIP view"); //$NON-NLS-1$
-            mip.addActionListener(new ActionListener() {
-
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    View2d.this.getSeries();
-                }
-            });
-
             if (p.getBooleanProperty("weasis.contextmenu.sortstack", true)) {
                 ActionState stackAction = eventManager.getAction(ActionW.SORTSTACK);
                 if (stackAction instanceof ComboItemListener) {
@@ -1201,6 +1196,12 @@ public class View2d extends DefaultView2d<DicomImageElement> {
 
         @Override
         public void mouseReleased(final MouseEvent evt) {
+            for (ViewButton b : viewButtons) {
+                if (b.contains(evt.getPoint())) {
+                    b.showPopup(evt.getComponent(), evt.getX(), evt.getY());
+                    return;
+                }
+            }
             showPopup(evt);
         }
 

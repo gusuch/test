@@ -298,8 +298,9 @@ public abstract class DefaultView2d<E extends ImageElement> extends GraphicsPane
         } else {
             E media = selectedMedia;
             if (selectedMedia == null) {
-                series.getMedia(tileOffset < 0 ? 0 : tileOffset,
-                    (Filter<E>) actionsInView.get(ActionW.FILTERED_SERIES.cmd()), getCurrentSortComparator());
+                media =
+                    series.getMedia(tileOffset < 0 ? 0 : tileOffset,
+                        (Filter<E>) actionsInView.get(ActionW.FILTERED_SERIES.cmd()), getCurrentSortComparator());
             }
 
             setDefautWindowLevel(media);
@@ -594,9 +595,13 @@ public abstract class DefaultView2d<E extends ImageElement> extends GraphicsPane
             g2d.setFont(getLayerFont());
             infoLayer.paint(g2d);
         }
+        drawExtendedAtions(g2d);
         g2d.setFont(defaultFont);
         g2d.setPaint(oldColor);
         g2d.setStroke(oldStroke);
+    }
+
+    protected void drawExtendedAtions(Graphics2D g2d) {
     }
 
     @Override

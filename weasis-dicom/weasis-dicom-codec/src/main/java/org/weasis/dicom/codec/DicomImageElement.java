@@ -47,7 +47,7 @@ import org.weasis.dicom.codec.utils.DicomImageUtils;
 import org.weasis.dicom.codec.utils.LutParameters;
 
 public class DicomImageElement extends ImageElement {
-
+    public static final String FILL_OUTSIDE_LUT = "fill_outside_lut";
     private static final SoftHashMap<LutParameters, LookupTableJAI> LUT_Cache =
         new SoftHashMap<LutParameters, LookupTableJAI>() {
 
@@ -632,7 +632,7 @@ public class DicomImageElement extends ImageElement {
      * @return
      */
     protected RenderedImage getRenderedImage(final RenderedImage imageSource, Float window, Float level,
-        LutShape lutShape, Boolean pixelPadding, Boolean inverseLUT) {
+        LutShape lutShape, Boolean pixelPadding, Boolean inverseLUT, boolean fillLutOutside) {
 
         if (imageSource == null) {
             return null;
@@ -658,7 +658,8 @@ public class DicomImageElement extends ImageElement {
             RenderedImage imageModalityTransformed =
                 modalityLookup == null ? imageSource : LookupDescriptor.create(imageSource, modalityLookup, null);
 
-            LookupTableJAI voiLookup = getVOILookup(modalityLookup, window, level, lutShape, false, pixelPadding);
+            LookupTableJAI voiLookup =
+                getVOILookup(modalityLookup, window, level, lutShape, fillLutOutside, pixelPadding);
             // BUG fix: for some images the color model is null. Creating 8 bits gray model layout fixes this issue.
             return LookupDescriptor.create(imageModalityTransformed, voiLookup, LayoutUtil.createGrayRenderedImage());
 
@@ -699,7 +700,11 @@ public class DicomImageElement extends ImageElement {
             (imageOperation == null) ? null : (Boolean) imageOperation.getActionValue(ActionW.IMAGE_PIX_PADDING.cmd());
         Boolean inverseLUT =
             (imageOperation == null) ? null : (Boolean) imageOperation.getActionValue(ActionW.INVERSELUT.cmd());
-        return this.getRenderedImage(imageSource, window, level, lutShape, pixelPadding, inverseLUT);
+        Boolean fillLutOutside =
+            (imageOperation == null) ? null : (Boolean) imageOperation
+                .getActionValue(DicomImageElement.FILL_OUTSIDE_LUT);
+        return this.getRenderedImage(imageSource, window, level, lutShape, pixelPadding, inverseLUT,
+            JMVUtils.getNULLtoFalse(fillLutOutside));
     }
 
     public GeometryOfSlice getSliceGeometry() {

@@ -125,8 +125,6 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
             TOOLBARS.add(1, bar.getMeasureToolBar());
             CineToolBar cineBar = new CineToolBar<DicomImageElement>();
             TOOLBARS.add(2, cineBar);
-            MipToolBar mipBar = new MipToolBar<DicomImageElement>();
-            TOOLBARS.add(3, mipBar);
 
             Preferences prefs = Activator.PREFERENCES.getDefaultPreferences();
             if (prefs != null) {
@@ -137,9 +135,6 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
                     cineLoopIsEnabled = true;
                 }
                 cineBar.setEnabled(cineLoopIsEnabled);
-
-                boolean mipIsEnabled = prefNode.getBoolean(MipToolBar.class.getName(), true);
-                mipBar.setEnabled(mipIsEnabled);
             }
 
             PluginTool tool = null;
@@ -322,6 +317,29 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
                     menuRoot.add(menu);
                 }
             }
+
+            menuRoot.add(new JSeparator());
+            JMenuItem mip = new JMenuItem("Open MIP view"); //$NON-NLS-1$
+            mip.addActionListener(new ActionListener() {
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    DefaultView2d<DicomImageElement> selView = getSelectedImagePane();
+                    if (selView != null) {
+                        MediaSeries<DicomImageElement> s = selView.getSeries();
+                        if (s != null && s.size(null) > 2) {
+                            setSelectedAndGetFocus();
+                            MipView newView2d = new MipView(eventManager);
+                            newView2d.registerDefaultListeners();
+                            newView2d.setSeries(s);
+                            replaceView(selView, newView2d);
+                            newView2d.applyMipParameters();
+                        }
+                    }
+                }
+            });
+            menuRoot.add(mip);
+
             menuRoot.add(new JSeparator());
             menuRoot.add(ResetTools.createUnregisteredJMenu());
 
