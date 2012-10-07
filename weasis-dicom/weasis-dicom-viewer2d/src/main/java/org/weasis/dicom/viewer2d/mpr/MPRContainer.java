@@ -1,26 +1,14 @@
-/*******************************************************************************
- * Copyright (c) 2010 Nicolas Roduit.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- * 
- * Contributors:
- *     Nicolas Roduit - initial API and implementation
- ******************************************************************************/
-package org.weasis.dicom.viewer2d;
+package org.weasis.dicom.viewer2d.mpr;
 
+import java.awt.GridBagConstraints;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -29,7 +17,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
 import org.osgi.service.prefs.Preferences;
@@ -37,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weasis.core.api.explorer.DataExplorerView;
 import org.weasis.core.api.explorer.ObservableEvent;
-import org.weasis.core.api.explorer.model.DataExplorerModel;
-import org.weasis.core.api.gui.util.AbstractProperties;
 import org.weasis.core.api.gui.util.ActionState;
 import org.weasis.core.api.gui.util.ActionW;
 import org.weasis.core.api.gui.util.ComboItemListener;
@@ -50,6 +35,7 @@ import org.weasis.core.api.gui.util.SliderCineListener;
 import org.weasis.core.api.gui.util.ToggleButtonListener;
 import org.weasis.core.api.gui.util.WinUtil;
 import org.weasis.core.api.image.GridBagLayoutModel;
+import org.weasis.core.api.image.LayoutConstraints;
 import org.weasis.core.api.media.data.MediaSeries;
 import org.weasis.core.api.media.data.MediaSeriesGroup;
 import org.weasis.core.api.media.data.Series;
@@ -60,7 +46,6 @@ import org.weasis.core.ui.docking.DockableTool;
 import org.weasis.core.ui.docking.PluginTool;
 import org.weasis.core.ui.docking.UIManager;
 import org.weasis.core.ui.editor.SeriesViewerListener;
-import org.weasis.core.ui.editor.ViewerPluginBuilder;
 import org.weasis.core.ui.editor.image.DefaultView2d;
 import org.weasis.core.ui.editor.image.ImageViewerPlugin;
 import org.weasis.core.ui.editor.image.SynchView;
@@ -72,38 +57,38 @@ import org.weasis.core.ui.util.Toolbar;
 import org.weasis.core.ui.util.WtoolBar;
 import org.weasis.dicom.codec.DicomImageElement;
 import org.weasis.dicom.codec.DicomSeries;
+import org.weasis.dicom.codec.geometry.ImageOrientation;
 import org.weasis.dicom.explorer.DicomExplorer;
 import org.weasis.dicom.explorer.DicomModel;
 import org.weasis.dicom.explorer.print.DicomPrintDialog;
+import org.weasis.dicom.viewer2d.CineToolBar;
+import org.weasis.dicom.viewer2d.EventManager;
+import org.weasis.dicom.viewer2d.Messages;
+import org.weasis.dicom.viewer2d.MipView;
+import org.weasis.dicom.viewer2d.ResetTools;
+import org.weasis.dicom.viewer2d.View2dFactory;
 import org.weasis.dicom.viewer2d.dockable.DisplayTool;
 import org.weasis.dicom.viewer2d.dockable.ImageTool;
 import org.weasis.dicom.viewer2d.internal.Activator;
-import org.weasis.dicom.viewer2d.mpr.MPRFactory;
+import org.weasis.dicom.viewer2d.mpr.MprView.Type;
 
-public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implements PropertyChangeListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(View2dContainer.class);
+public class MPRContainer extends ImageViewerPlugin<DicomImageElement> implements PropertyChangeListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MPRContainer.class);
 
-    // TODO read and store models
-    public static final GridBagLayoutModel VIEWS_2x1_r1xc2_dump =
-        new GridBagLayoutModel(
-            View2dContainer.class.getResourceAsStream("/config/layoutModel.xml"), "layout_dump", Messages.getString("View2dContainer.layout_dump"), new ImageIcon( //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                View2dContainer.class.getResource("/icon/22x22/layout1x2_c2.png"))); //$NON-NLS-1$
+    public static final GridBagLayoutModel VIEWS_2x1_mpr = new GridBagLayoutModel(
+        new LinkedHashMap<LayoutConstraints, JComponent>(3), "mpr", "Orthogonal MPR", null);
+    static {
+        LinkedHashMap<LayoutConstraints, JComponent> constraints = VIEWS_2x1_mpr.getConstraints();
+        constraints.put(new LayoutConstraints(MprView.class.getName(), 0, 0, 0, 1, 2, 0.5, 1.0,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
+        constraints.put(new LayoutConstraints(MprView.class.getName(), 1, 1, 0, 1, 1, 0.5, 0.5,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
+        constraints.put(new LayoutConstraints(MprView.class.getName(), 2, 1, 1, 1, 1, 0.5, 0.5,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
 
-    // public static final GridBagLayoutModel VIEWS_2x2_mpr = new GridBagLayoutModel(
-    // new LinkedHashMap<LayoutConstraints, JComponent>(3), "Orthogonal MPR", null);
-    // static {
-    // LinkedHashMap<LayoutConstraints, JComponent> constraints = VIEWS_2x2_mpr.getConstraints();
-    // constraints.put(new LayoutConstraints(MprView.class.getName(), 0, 0, 0, 1, 2, 0.5, 1.0,
-    // GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
-    // constraints.put(new LayoutConstraints(MprView.class.getName(), 1, 1, 0, 1, 1, 0.5, 0.5,
-    // GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
-    // constraints.put(new LayoutConstraints(MprView.class.getName(), 2, 1, 1, 1, 1, 0.5, 0.5,
-    // GridBagConstraints.CENTER, GridBagConstraints.BOTH), null);
-    //
-    // }
+    }
 
-    public static final GridBagLayoutModel[] MODELS = { VIEWS_1x1, VIEWS_1x2, VIEWS_2x1, VIEWS_2x2_f2, VIEWS_2_f1x2,
-        VIEWS_2x1_r1xc2_dump, VIEWS_2x2, VIEWS_3x2, VIEWS_3x3, VIEWS_4x3, VIEWS_4x4 };
+    public static final GridBagLayoutModel[] MODELS = { VIEWS_2x1_mpr };
 
     // Static tools shared by all the View2dContainer instances, tools are registered when a container is selected
     // Do not initialize tools in a static block (order initialization issue with eventManager), use instead a lazy
@@ -113,11 +98,11 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
     private static WtoolBar statusBar = null;
     private static boolean INI_COMPONENTS = false;
 
-    public View2dContainer() {
+    public MPRContainer() {
         this(VIEWS_1x1);
     }
 
-    public View2dContainer(GridBagLayoutModel layoutModel) {
+    public MPRContainer(GridBagLayoutModel layoutModel) {
         super(EventManager.getInstance(), layoutModel, View2dFactory.NAME, View2dFactory.ICON, null);
         setSynchView(SynchView.DEFAULT_STACK);
         if (!INI_COMPONENTS) {
@@ -322,9 +307,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
             }
 
             menuRoot.add(new JSeparator());
-
-            JMenu menu = new JMenu("3D");
-            JMenuItem mip = new JMenuItem("MIP view"); //$NON-NLS-1$
+            JMenuItem mip = new JMenuItem("Open MIP view"); //$NON-NLS-1$
             mip.addActionListener(new ActionListener() {
 
                 @Override
@@ -343,28 +326,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
                     }
                 }
             });
-            menu.add(mip);
-
-            JMenuItem mpr = new JMenuItem("Orthogonal MPR"); //$NON-NLS-1$
-            mpr.addActionListener(new ActionListener() {
-
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    DefaultView2d<DicomImageElement> selView = getSelectedImagePane();
-                    if (selView != null) {
-                        MediaSeries<DicomImageElement> s = selView.getSeries();
-                        if (s != null && s.size(null) > 7) {
-                            DataExplorerModel model = (DataExplorerModel) s.getTagValue(TagW.ExplorerModel);
-                            if (model instanceof DicomModel) {
-                                ViewerPluginBuilder.openSequenceInPlugin(new MPRFactory(), s, model, false, false);
-                            }
-                        }
-                    }
-                }
-            });
-            menu.add(mpr);
-
-            menuRoot.add(menu);
+            menuRoot.add(mip);
 
             menuRoot.add(new JSeparator());
             menuRoot.add(ResetTools.createUnregisteredJMenu());
@@ -398,8 +360,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
     @Override
     public void close() {
         super.close();
-        View2dFactory.closeSeriesViewer(this);
-
+        MPRFactory.closeSeriesViewer(this);
         GuiExecutor.instance().execute(new Runnable() {
 
             @Override
@@ -552,10 +513,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
 
     @Override
     public DefaultView2d<DicomImageElement> createDefaultView(String classType) {
-        // if (MprView.class.getName().equals(classType)) {
-        // return new MprView(eventManager, VIEWS_2x2_mpr);
-        // }
-        return new View2d(eventManager);
+        return new MprView(eventManager);
     }
 
     @Override
@@ -599,67 +557,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
 
     @Override
     public List<Action> getExportActions() {
-        List<Action> actions = selectedImagePane == null ? null : selectedImagePane.getExportToClipboardAction();
-        // TODO Add option in properties to deactivate this option
-        if (AbstractProperties.OPERATING_SYSTEM.startsWith("mac")) { //$NON-NLS-1$
-            AbstractAction importAll =
-                new AbstractAction(
-                    Messages.getString("View2dContainer.expOsirixMes"), new ImageIcon(View2dContainer.class.getResource("/icon/16x16/osririx.png"))) { //$NON-NLS-1$//$NON-NLS-2$
-
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        String cmd = "/usr/bin/open -a OsiriX"; //$NON-NLS-1$
-                        String baseDir = System.getProperty("weasis.portable.dir"); //$NON-NLS-1$
-                        if (baseDir != null) {
-                            String prop = System.getProperty("weasis.portable.dicom.directory"); //$NON-NLS-1$
-                            if (prop != null) {
-                                String[] dirs = prop.split(","); //$NON-NLS-1$
-                                File[] files = new File[dirs.length];
-                                for (int i = 0; i < files.length; i++) {
-                                    File file = new File(baseDir, dirs[i].trim());
-                                    if (file.canRead()) {
-                                        cmd += " " + file.getAbsolutePath(); //$NON-NLS-1$
-                                    }
-                                }
-                            }
-                        } else {
-                            File file = new File(AbstractProperties.APP_TEMP_DIR, "dicom"); //$NON-NLS-1$
-                            if (file.canRead()) {
-                                cmd += " " + file.getAbsolutePath(); //$NON-NLS-1$
-                            }
-                        }
-                        System.out.println("Execute cmd:" + cmd); //$NON-NLS-1$
-                        try {
-                            Process p = Runtime.getRuntime().exec(cmd);
-                            BufferedReader buffer = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-                            String data;
-                            while ((data = buffer.readLine()) != null) {
-                                System.out.println(data);
-                            }
-                            int val = 0;
-                            if (p.waitFor() != 0) {
-                                val = p.exitValue();
-                            }
-                            if (val != 0) {
-                                JOptionPane.showMessageDialog(View2dContainer.this,
-                                    Messages.getString("View2dContainer.expOsirixTitle"), //$NON-NLS-1$
-                                    Messages.getString("View2dContainer.expOsirixMes"), JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
-                            }
-
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        } catch (InterruptedException e2) {
-                            LOGGER.error("Cannot get the exit status of the open Osirix command: ", e2.getMessage()); //$NON-NLS-1$
-                        }
-                    }
-                };
-            if (actions == null) {
-                actions = new ArrayList<Action>(1);
-            }
-            actions.add(importAll);
-        }
-        return actions;
+        return null;
     }
 
     @Override
@@ -671,7 +569,7 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    Window parent = WinUtil.getParentWindow(View2dContainer.this);
+                    Window parent = WinUtil.getParentWindow(MPRContainer.this);
                     PrintDialog dialog = new PrintDialog(parent, title, eventManager);
                     JMVUtils.showCenterScreen(dialog, parent);
                 }
@@ -683,12 +581,95 @@ public class View2dContainer extends ImageViewerPlugin<DicomImageElement> implem
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                Window parent = WinUtil.getParentWindow(View2dContainer.this);
+                Window parent = WinUtil.getParentWindow(MPRContainer.this);
                 DicomPrintDialog dialog = new DicomPrintDialog(parent, title2, eventManager);
                 JMVUtils.showCenterScreen(dialog, parent);
             }
         };
         actions.add(printStd2);
         return actions;
+    }
+
+    public MprView getMprView(Type type) {
+        for (DefaultView2d v : view2ds) {
+            if (v instanceof MprView) {
+                if ((((MprView) v).getType()).equals(type)) {
+                    return (MprView) v;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void addSeries(MediaSeries<DicomImageElement> sequence) {
+
+        // TODO Should be init elsewhere
+        for (int i = 0; i < view2ds.size(); i++) {
+            DefaultView2d<DicomImageElement> val = view2ds.get(i);
+            if (val instanceof MprView) {
+                Type type;
+                switch (i) {
+                    case 1:
+                        type = Type.CORONAL;
+                        break;
+                    case 2:
+                        type = Type.SAGITTAL;
+                        break;
+                    default:
+                        type = Type.AXIAL;
+                        break;
+                }
+                ((MprView) val).setType(type);
+            }
+        }
+
+        MprView view = selectLayoutPositionForAddingSeries(sequence);
+        if (view != null) {
+            super.addSeries(sequence);
+            try {
+                SeriesBuilder.createMissingSeries(this, view);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void addSeriesList(List<MediaSeries<DicomImageElement>> seriesList, boolean removeOldSeries) {
+        if (seriesList != null && seriesList.size() > 0) {
+            addSeries(seriesList.get(0));
+        }
+    }
+
+    @Override
+    public void selectLayoutPositionForAddingSeries(List<MediaSeries<DicomImageElement>> seriesList) {
+        // Do it in addSeries()
+    }
+
+    public MprView selectLayoutPositionForAddingSeries(MediaSeries s) {
+        if (s != null) {
+            Object img = s.getMedia(MediaSeries.MEDIA_POSITION.MIDDLE, null, null);
+            if (img instanceof DicomImageElement) {
+                double[] v = (double[]) ((DicomImageElement) img).getTagValue(TagW.ImageOrientationPatient);
+                if (v != null && v.length == 6) {
+                    String orientation =
+                        ImageOrientation.makeImageOrientationLabelFromImageOrientationPatient(v[0], v[1], v[2], v[3],
+                            v[4], v[5]);
+                    Type type = Type.AXIAL;
+                    if (ImageOrientation.LABELS[3].equals(orientation)) {
+                        type = Type.CORONAL;
+                    } else if (ImageOrientation.LABELS[2].equals(orientation)) {
+                        type = Type.SAGITTAL;
+                    }
+                    MprView view = getMprView(type);
+                    if (view != null) {
+                        setSelectedImagePane(view);
+                        return view;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

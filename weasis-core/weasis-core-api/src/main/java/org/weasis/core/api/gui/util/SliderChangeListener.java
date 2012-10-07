@@ -226,7 +226,7 @@ public abstract class SliderChangeListener extends MouseActionAdapter implements
     @Override
     public void mousePressed(MouseEvent e) {
         int buttonMask = getButtonMaskEx();
-        if ((e.getModifiersEx() & buttonMask) != 0) {
+        if (!e.isConsumed() && (e.getModifiersEx() & buttonMask) != 0) {
             lastPosition = isMoveOnX() ? e.getX() : e.getY();
             dragAccumulator = getValue();
         }
@@ -238,7 +238,7 @@ public abstract class SliderChangeListener extends MouseActionAdapter implements
         int modifier = e.getModifiersEx();
         // dragAccumulator == Double.NaN when the listener did not catch the Pressed MouseEvent (could append in
         // multisplit container)
-        if ((modifier & buttonMask) != 0 && dragAccumulator != Double.MAX_VALUE) {
+        if (!e.isConsumed() && (modifier & buttonMask) != 0 && dragAccumulator != Double.MAX_VALUE) {
             int position = isMoveOnX() ? e.getX() : e.getY();
             int mask = (InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK);
             // Accelerate the action if ctrl or shift is down

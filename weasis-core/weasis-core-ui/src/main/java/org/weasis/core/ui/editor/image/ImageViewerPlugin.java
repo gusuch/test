@@ -595,7 +595,7 @@ public abstract class ImageViewerPlugin<E extends ImageElement> extends ViewerPl
         return VIEWS_1x1;
     }
 
-    public void addSeriesList(List<MediaSeries> seriesList, boolean removeOldSeries) {
+    public void addSeriesList(List<MediaSeries<E>> seriesList, boolean removeOldSeries) {
         if (seriesList != null && seriesList.size() > 0) {
             if (SynchView.Mode.Tile.equals(synchView.getMode())) {
                 addSeries(seriesList.get(0));
@@ -858,5 +858,20 @@ public abstract class ImageViewerPlugin<E extends ImageElement> extends ViewerPl
             return component;
         }
 
+    }
+
+    public void selectLayoutPositionForAddingSeries(List<MediaSeries<E>> seriesList) {
+        int nbSeriesToAdd = 1;
+        if (seriesList != null) {
+            nbSeriesToAdd = seriesList.size();
+            if (nbSeriesToAdd < 1) {
+                nbSeriesToAdd = 1;
+            }
+        }
+        int pos = view2ds.size() - nbSeriesToAdd;
+        if (pos < 0) {
+            pos = 0;
+        }
+        setSelectedImagePane(view2ds.get(pos));
     }
 }

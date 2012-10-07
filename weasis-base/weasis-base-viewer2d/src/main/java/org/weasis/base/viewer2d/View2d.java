@@ -292,7 +292,7 @@ public class View2d extends DefaultView2d<ImageElement> {
         @Override
         public void mousePressed(final MouseEvent evt) {
             int buttonMask = getButtonMaskEx();
-            if ((evt.getModifiersEx() & buttonMask) != 0) {
+            if (!evt.isConsumed() && (evt.getModifiersEx() & buttonMask) != 0) {
                 final ArrayList<Graphic> selected =
                     new ArrayList<Graphic>(View2d.this.getLayerModel().getSelectedGraphics());
                 if (selected.size() > 0) {

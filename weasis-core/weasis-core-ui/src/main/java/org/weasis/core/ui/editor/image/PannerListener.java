@@ -100,7 +100,7 @@ public abstract class PannerListener extends MouseActionAdapter implements Actio
     @Override
     public void mouseDragged(MouseEvent e) {
         int buttonMask = getButtonMaskEx();
-        if ((e.getModifiersEx() & buttonMask) != 0) {
+        if (!e.isConsumed() && (e.getModifiersEx() & buttonMask) != 0) {
             DefaultView2d panner = getDefaultView2d(e);
             if (panner != null) {
                 if (pickPoint != null) {
@@ -116,7 +116,7 @@ public abstract class PannerListener extends MouseActionAdapter implements Actio
     @Override
     public void mouseReleased(MouseEvent e) {
         int buttonMask = getButtonMask();
-        if ((e.getModifiers() & buttonMask) != 0) {
+        if (!e.isConsumed() && (e.getModifiers() & buttonMask) != 0) {
             DefaultView2d panner = getDefaultView2d(e);
             if (panner != null) {
                 panner.setPointerType(0);

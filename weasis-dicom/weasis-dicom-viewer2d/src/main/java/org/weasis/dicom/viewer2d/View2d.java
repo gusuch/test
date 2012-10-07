@@ -91,7 +91,6 @@ import org.weasis.core.ui.editor.image.ImageViewerPlugin;
 import org.weasis.core.ui.editor.image.MouseActions;
 import org.weasis.core.ui.editor.image.PannerListener;
 import org.weasis.core.ui.editor.image.SynchView;
-import org.weasis.core.ui.editor.image.ViewButton;
 import org.weasis.core.ui.editor.image.ViewerPlugin;
 import org.weasis.core.ui.editor.image.ViewerToolBar;
 import org.weasis.core.ui.graphic.AbstractDragGraphic;
@@ -130,11 +129,9 @@ import org.weasis.dicom.explorer.MimeSystemAppFactory;
 public class View2d extends DefaultView2d<DicomImageElement> {
     private final Dimension oldSize;
     private final ContextMenuHandler contextMenuHandler = new ContextMenuHandler();
-    protected final List<ViewButton> viewButtons;
 
     public View2d(ImageViewerEventManager<DicomImageElement> eventManager) {
         super(eventManager);
-        this.viewButtons = new ArrayList<ViewButton>();
 
         OperationsManager manager = imageLayer.getOperationsManager();
         manager.addImageOperationAction(new WindowLevelOperation());
@@ -1196,24 +1193,16 @@ public class View2d extends DefaultView2d<DicomImageElement> {
 
         @Override
         public void mouseReleased(final MouseEvent evt) {
-            for (ViewButton b : viewButtons) {
-                if (b.contains(evt.getPoint())) {
-                    b.showPopup(evt.getComponent(), evt.getX(), evt.getY());
-                    return;
-                }
-            }
             showPopup(evt);
         }
 
         private void showPopup(final MouseEvent evt) {
-            if (evt.isPopupTrigger()) {
-                int buttonMask = getButtonMaskEx();
-                // Context menu
-                if ((evt.getModifiersEx() & buttonMask) != 0) {
-                    JPopupMenu popupMenu = View2d.this.buidContexMenu(evt);
-                    if (popupMenu != null) {
-                        popupMenu.show(evt.getComponent(), evt.getX(), evt.getY());
-                    }
+            int buttonMask = getButtonMaskEx();
+            // Context menu
+            if (!evt.isConsumed() && (evt.getModifiersEx() & buttonMask) != 0) {
+                JPopupMenu popupMenu = View2d.this.buidContexMenu(evt);
+                if (popupMenu != null) {
+                    popupMenu.show(evt.getComponent(), evt.getX(), evt.getY());
                 }
             }
         }
